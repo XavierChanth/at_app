@@ -1,14 +1,15 @@
 import 'dart:io';
+
+import 'package:path/path.dart' as path;
 import 'package:pub_cache/pub_cache.dart';
 import 'package:pub_semver/pub_semver.dart';
-import 'package:path/path.dart' as path;
 
+import '../version.dart';
 import 'file_manager.dart';
 
 class TemplateManager extends FileManager {
   String filename;
   PubCache pc;
-  String? packageVersion;
 
   late File source;
   late String hostedPubCachePath;
@@ -45,13 +46,24 @@ class TemplateManager extends FileManager {
       throw NoPackageException('at_app');
     }
 
+    // try to build from the exact version if possible
+    // otherwise use the latest available
+    if (version != Version.parse(packageVersion)) {
+      buildSourceUrlForVersion(packageVersion);
+      if (source.existsSync()) return;
+    }
+    buildSourceUrlForVersion(version.toString());
+  }
+
+  void buildSourceUrlForVersion(String version) {
     source = FileManager.fileFromPath(path.normalize(
-        '$hostedPubCachePath/at_app-${version.toString()}/lib/templates/$filename'));
+        '$hostedPubCachePath/at_app-${version}/lib/templates/$filename'));
   }
 }
 
-class NoPackageException extends Exception {
-  factory NoPackageException(String packageName) =>
-      Exception('No version of $packageName found in the pub cache.')
-          as NoPackageException;
+class NoPackageException implements Exception {
+  final String message;
+
+  NoPackageException(String packageName)
+      : message = 'No version of $packageName found in the pub cache.';
 }
