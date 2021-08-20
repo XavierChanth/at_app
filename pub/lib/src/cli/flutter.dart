@@ -4,12 +4,12 @@ import 'cli_base.dart';
 
 class Flutter {
   static Future<void> pubAdd(String package, {Directory? directory}) async {
-    await _Cli.run(['pub', 'add', package],
+    await _FlutterCli.run(['pub', 'add', package],
         directory: directory?.absolute.path);
   }
 
   static Future<void> pubGet({Directory? directory}) async {
-    await _Cli.run(['pub', 'get'], directory: directory?.absolute.path);
+    await _FlutterCli.run(['pub', 'get'], directory: directory?.absolute.path);
   }
 
   static Future<void> create(
@@ -37,7 +37,7 @@ class Flutter {
 
     args.addAll(['--platforms=android,ios', directory.absolute.path]);
 
-    await _Cli.run(args);
+    await _FlutterCli.run(args);
   }
 
   static String createBoolFlag(String name, bool value) {
@@ -45,7 +45,7 @@ class Flutter {
   }
 }
 
-class _Cli extends Cli {
+class _FlutterCli extends Cli {
   static Future<ProcessResult> run(List<String> args,
       {bool throwOnError = true, String? directory}) {
     return Cli.run(
