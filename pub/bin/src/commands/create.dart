@@ -96,7 +96,7 @@ class AtCreateCommand extends CreateBase {
     // Create a TemplateManager for the main file
     final TemplateManager mainFileManager = TemplateManager(
       projectDir,
-      'lib/main.dart',
+      'main.dart',
       '${Platform.script.toFilePath()}/../../lib/templates/main.dart',
     );
 

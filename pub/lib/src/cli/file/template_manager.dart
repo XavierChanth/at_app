@@ -6,17 +6,19 @@ import 'package:path/path.dart' as path;
 import 'file_manager.dart';
 
 class TemplateManager extends FileManager {
-  File source;
+  String filename;
   PubCache pc;
   String? packageVersion;
+
+  late File source;
   late String hostedPubCachePath;
 
-  TemplateManager(Directory projectDir, String filename, String source)
-      : source = FileManager.fileFromPath(source),
-        pc = PubCache(),
-        super(projectDir, filename) {
+  TemplateManager(Directory projectDir, this.filename)
+      : pc = PubCache(),
+        super(projectDir, path.normalize('lib/$filename')) {
     hostedPubCachePath =
         path.normalize('${pc.location.absolute.path}/hosted/pub.dartlang.org');
+    setSourceFromPubCache();
   }
 
   Future<bool> copyTemplate() async {
@@ -43,8 +45,8 @@ class TemplateManager extends FileManager {
       throw NoPackageException('at_app');
     }
 
-    source = FileManager.fileFromPath(
-        '$hostedPubCachePath/at_app-${version.toString()}/lib/templates/main.dart');
+    source = FileManager.fileFromPath(path.normalize(
+        '$hostedPubCachePath/at_app-${version.toString()}/lib/templates/$filename'));
   }
 }
 
