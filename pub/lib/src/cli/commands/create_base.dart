@@ -5,6 +5,8 @@ import 'package:args/command_runner.dart';
 import 'package:at_app/src/cli/command_status.dart';
 import 'package:logger/logger.dart';
 
+import '../flutter.dart';
+
 const flutterArgs = <String>[
   'pub',
   'offline',
@@ -23,12 +25,12 @@ const atAppArgs = <String>[
   'api-key',
 ];
 
-abstract class FlutterCreate extends Command<CommandStatus> {
+abstract class CreateBase extends Command<CommandStatus> {
   final String name = 'create';
 
   final Logger _logger;
 
-  FlutterCreate({Logger? logger}) : _logger = logger ?? Logger() {
+  CreateBase({Logger? logger}) : _logger = logger ?? Logger() {
     // Flutter Arguments
     argParser.addFlag(
       'pub',
@@ -46,7 +48,6 @@ abstract class FlutterCreate extends Command<CommandStatus> {
     );
     argParser.addFlag(
       'overwrite',
-      negatable: true,
       defaultsTo: false,
       help: 'When performing operations, overwrite existing files.',
     );
@@ -85,10 +86,33 @@ abstract class FlutterCreate extends Command<CommandStatus> {
     );
   }
 
+  bool? boolArg(String name) => argResults?[name] as bool?;
+  String? stringArg(String name) => argResults?[name] as String?;
+
   @override
   Future<CommandStatus> run() async {
     validateOutputDirectoryArg();
-    //TODO implement flutter create here
+    bool? pub = boolArg('pub');
+    bool? offline = boolArg('offline');
+    bool? overwrite = boolArg('overwrite');
+    String? description = stringArg('description');
+    String? org = stringArg('org');
+    String? projectName = stringArg('project-name');
+    String? iosLang = stringArg('ios-language');
+    String? androidLang = stringArg('android-language');
+
+    await Flutter.create(
+      outputDirectory,
+      pub: pub,
+      offline: offline,
+      overwrite: overwrite,
+      description: description,
+      org: org,
+      projectName: projectName,
+      iosLanguage: iosLang,
+      androidLanguage: androidLang,
+    );
+
     return CommandStatus.success;
   }
 
@@ -113,4 +137,6 @@ abstract class FlutterCreate extends Command<CommandStatus> {
   Directory get outputDirectory {
     return Directory(argResults!.rest.first);
   }
+
+  
 }

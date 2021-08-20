@@ -1,13 +1,12 @@
-import 'dart:io';
-
+import 'package:at_app/src/cli/exceptions.dart';
 import 'package:logger/logger.dart';
-import 'package:args/src/usage_exception.dart';
 
 import '../command_status.dart';
 import '../file/index.dart';
-import 'flutter_create.dart';
+import '../flutter.dart';
+import 'create_base.dart';
 
-class CreateCommand extends FlutterCreate {
+class CreateCommand extends CreateBase {
   final String description = 'Create a new @platform Flutter project.';
   final Logger _logger;
   CreateCommand({Logger? logger})
@@ -44,54 +43,59 @@ class CreateCommand extends FlutterCreate {
         TemplateManager(outputDirectory, 'main.dart');
 
     bool shouldWriteMainFile =
-        argResults!['overwrite'] ?? false || !mainFileManager.existsSync;
+        boolArg('overwrite') ?? false || !mainFileManager.existsSync;
 
     CommandStatus flutterCreateResult = await super.run();
     if (flutterCreateResult != CommandStatus.success) {
       return flutterCreateResult;
     }
 
-    var results = await Future.wait([
-      _updateEnvFile(),
-      _addDependencies(),
-      if (shouldWriteMainFile) mainFileManager.copyTemplate(),
-      _androidConfig(),
+    await Future.wait([
+      updateEnvFile(),
+      addDependencies(),
+      androidConfig(),
     ]);
 
-    results.forEach((result) {
-      if (!result) {
-        throwToolExit(
-          'There was an issue generating your @platform $projectType',
-          exitCode: 3,
-        );
-      }
-    });
+    // Should be completed after addDependencies
+    // so that we can expect at_app to be in the pub cache
+    try {
+      if (shouldWriteMainFile) await mainFileManager.copyTemplate();
+    } catch (e) {
+      throw TemplateFileException(e.toString());
+    }
 
     return CommandStatus.success;
   }
 
-  Future<bool> _updateEnvFile() async {
-    var values = _parseEnvArgs();
-    // generatedFileCount++;
-    return EnvManager(outputDirectory).update(values);
+  /// Updates the environment variables from the command arguments
+  Future<void> updateEnvFile() async {
+    try {
+      var values = parseEnvArgs();
+      // generatedFileCount++;
+      await EnvManager(outputDirectory).update(values);
+    } catch (e) {
+      throw EnvException(e.toString());
+    }
   }
 
-  Map<String, String> _parseEnvArgs() {
-    if (argResults == null) throw NullThrownError();
+  /// Parses the environment variables from the command arguments
+  Map<String, String> parseEnvArgs() {
+    assert(argResults != null);
     Map<String, String> result = {};
     if (argResults!.wasParsed('namespace')) {
-      result['NAMESPACE'] = argResults!['namespace'];
+      result['NAMESPACE'] = stringArg('namespace')!;
     }
     if (argResults!.wasParsed('root-domain')) {
-      result['ROOT_DOMAIN'] = _getRootDomain(argResults!['root-domain']);
+      result['ROOT_DOMAIN'] = getRootDomain(stringArg('root-domain')!);
     }
     if (argResults!.wasParsed('api-key')) {
-      result['API_KEY'] = argResults!['api-key'];
+      result['API_KEY'] = stringArg('api-key')!;
     }
     return result;
   }
 
-  String _getRootDomain(String flag) {
+  /// Get the full rootDomain for the specified [flag]
+  String getRootDomain(String flag) {
     switch (flag) {
       case 've':
         return 'vip.ve.atsign.zone';
@@ -101,32 +105,36 @@ class CreateCommand extends FlutterCreate {
     }
   }
 
-  // * dependencies for skeleton_app
-
-  Future<bool> _addDependencies() async {
-    if (argResults == null) throw NullThrownError();
+  /// Dependencies for the @platform app
+  Future<void> addDependencies() async {
+    assert(argResults != null);
     final List<String> packages = [
       'at_client_mobile',
       'at_onboarding_flutter',
       'at_app'
     ];
-    final bool local = argResults!['local'] as bool;
-    List<Future> futures = packages.map((package) async {
-      return await pub.add(package, local: local, directory: outputDirectory);
-    }).toList();
-    if (argResults!['pub']) {
-      await pub.get(directory: outputDirectory);
+    try {
+      List<Future> futures = packages.map((package) async {
+        return await Flutter.pubAdd(package, directory: outputDirectory);
+      }).toList();
+      if (boolArg('pub')!) {
+        await Flutter.pubGet(directory: outputDirectory);
+      }
+      await Future.wait(futures);
+    } catch (e) {
+      throw PubException(e.toString());
     }
-    return (await Future.wait(futures)).every((res) => res);
   }
 
-  // * update the flutter android config
-
-  Future<bool> _androidConfig() async {
-    List<Future> futures = [
-      GradlePropertiesManager(outputDirectory).update(),
-      AppBuildGradleManager(outputDirectory).update()
-    ];
-    return (await Future.wait(futures)).every((res) => res);
+  /// Required Android build configuration
+  Future<void> androidConfig() async {
+    try {
+      await Future.wait([
+        GradlePropertiesManager(outputDirectory).update(),
+        AppBuildGradleManager(outputDirectory).update()
+      ]);
+    } catch (e) {
+      throw AndroidBuildException(e.toString());
+    }
   }
 }

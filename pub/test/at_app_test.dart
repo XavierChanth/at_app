@@ -1,6 +1,5 @@
-// @dart=2.8
 import 'package:pub_cache/pub_cache.dart';
-import 'package:flutter_tools/src/globals.dart' as globals;
+import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'package:test/test.dart';
 
@@ -13,19 +12,19 @@ void main() {
     });
 
     test('at_app is found in pub cache', () {
-      PackageRef latest = PubCache().getLatestVersion('at_app');
-      print('latest.version.toString() => ${latest.version.toString()}');
+      PackageRef? latest = PubCache().getLatestVersion('at_app');
+      print('latest.version.toString() => ${latest?.version.toString()}');
       expect(latest == null, false);
     });
 
     test('main.dart template exists in the pub cache', () {
       PubCache pc = PubCache();
-      String hostedPubCachePath = globals.fs.path
+      String hostedPubCachePath = path
           .normalize('${pc.location.absolute.path}/hosted/pub.dartlang.org');
 
       print('hostedPubCachePath => ${hostedPubCachePath}');
 
-      String templatePath = globals.fs.path.join(
+      String templatePath = path.join(
           hostedPubCachePath,
           'at_app-${pc.getLatestVersion('at_app')?.version.toString()}',
           'lib',
