@@ -4,26 +4,73 @@
 
 # at_app
 
-This is a common repository for the at_app tool that is intended to be published on various platforms.  
-at_app is a tool to help app developers create an @ platform app with flutter.  
-This toolkit serves as an extension of the `flutter create` toolkit.
+A command line tool to help developers build an @ platform application.
 
-## Mediums
+## Who is this for?
 
-This tool kit is currently available in the following mediums:
+This is for flutter developers looking to build end to end encrypted apps.
 
-### [pub](pub)
+## Getting Started
 
-As a command line tool, you can find the original `flutter create` [here](https://github.com/flutter/flutter).
+This application is an extension of `flutter create`, that replaces the main.dart file with our own custom template. We also perform the additional build configurations required for the onboarding package.
 
-Read more on our version of the tool [here](pub/README.md).
+The at_app package contains two pieces:
 
-### [Visual Studio Code](vscode)
+- Executable
+- Library
 
-As an extension, you can find the original extensions [here](https://github.com/Dart-Code/Flutter) and [here](https://github.com/Dart-Code/Dart-Code).
+Together these two parts work together to provide app developers with the prerequisites of an @ platform app.
 
-In progress. Read more on our version of the tool [here](vscode/README.md)
+### Executable
 
-### IntelliJ (extension)
+The executable is an extension of the `flutter create` command, and can be used to create a new @ platform app from our template.
 
-Coming soon
+Activate the executable:
+
+```sh
+flutter pub global activate at_app
+```
+
+Make sure the pub cache bin is on your path, the previous command should tell you what the path entry should be.
+
+Create a new @ platform app:
+
+```sh
+at_app create [...options] <output directory>
+```
+
+Or for windows
+
+```sh
+at_app.bat create [...options] <output directory>
+```
+
+#### Flags
+
+`at_app create` includes all of the `flutter create` flags, with the exception of --template, --sample, --list-samples
+
+| Flag          | Shorthand | Description                                             | Value                |
+| ------------- | --------- | ------------------------------------------------------- | -------------------- |
+| --namespace   | -n        | The @protocol app namespace to use for the application. | (defaults to "")     |
+| --root-domain | -r        | The @protocol root domain to use for the application.   | [prod (default), ve] |
+| --api-key     | -k        | The api key for at_onboarding_flutter.                  | (defaults to "")     |
+
+### Library
+
+The library portion contains two classes, to see the usage of these classes please generate an app using the executable above.
+
+#### AtEnv
+
+To manage the environment variables configured via `at_app create` (listed in the table above)
+
+#### AtContext
+
+A wrapper for the MaterialApp widget to provide the AtClientService via global context.
+
+## Maintainers
+
+Created by [XavierChanth](https://github.com/xavierchanth)
+
+## More Information
+
+This tool is available in multiple formats, please see [the overview](OVERVIEW.md) for more information.

@@ -1,18 +1,18 @@
 #
 # pub
 #
-pub/.dart_tool/
-pub/.packages
-pub/build/
-pub/flutter*.log
-pub/tests
-pub/.flutter-plugins*
-pub/analysis-options.yaml
+.dart_tool/
+.packages
+build/
+flutter*.log
+tests
+.flutter-plugins*
+analysis-options.yaml
 
 #
 # vscode
 #
-vscode/node_modules/
-vscode/.vscode-test
-vscode/out
-vscode/dist
+extensions/vscode/node_modules/
+extensions/vscode/.vscode-test
+extensions/vscode/out
+extensions/vscode/dist
