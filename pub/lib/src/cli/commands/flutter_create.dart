@@ -84,4 +84,33 @@ abstract class FlutterCreate extends Command<CommandStatus> {
           'The language to use for Android-specific code, either Java (legacy) or Kotlin (recommended).',
     );
   }
+
+  @override
+  Future<CommandStatus> run() async {
+    validateOutputDirectoryArg();
+    //TODO implement flutter create here
+    return CommandStatus.success;
+  }
+
+  void validateOutputDirectoryArg() {
+    if (argResults?.rest.isEmpty ?? false) {
+      throw UsageException(
+          'No option specified for the output directory.', usage);
+    }
+
+    if (argResults!.rest.length > 1) {
+      String message = 'Multiple output directories specified.';
+      for (final String arg in argResults!.rest) {
+        if (arg.startsWith('-')) {
+          message += '\nTry moving $arg to be immediately following $name';
+          break;
+        }
+      }
+      throw FormatException(message);
+    }
+  }
+
+  Directory get outputDirectory {
+    return Directory(argResults!.rest.first);
+  }
 }

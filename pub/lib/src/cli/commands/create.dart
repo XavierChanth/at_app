@@ -41,36 +41,92 @@ class CreateCommand extends FlutterCreate {
   Future<CommandStatus> run() async {
     validateOutputDirectoryArg();
     final TemplateManager mainFileManager =
-        TemplateManager(projectDir, 'main.dart');
+        TemplateManager(outputDirectory, 'main.dart');
 
-    CommandStatus? flutterCreateResult = await super.run();
-    if (flutterCreateResult != null) return flutterCreateResult;
+    bool shouldWriteMainFile =
+        argResults!['overwrite'] ?? false || !mainFileManager.existsSync;
+
+    CommandStatus flutterCreateResult = await super.run();
+    if (flutterCreateResult != CommandStatus.success) {
+      return flutterCreateResult;
+    }
+
+    var results = await Future.wait([
+      _updateEnvFile(),
+      _addDependencies(),
+      if (shouldWriteMainFile) mainFileManager.copyTemplate(),
+      _androidConfig(),
+    ]);
+
+    results.forEach((result) {
+      if (!result) {
+        throwToolExit(
+          'There was an issue generating your @platform $projectType',
+          exitCode: 3,
+        );
+      }
+    });
+
     return CommandStatus.success;
   }
 
-  void validateOutputDirectoryArg() {
-    if (argResults?.rest.isEmpty ?? false) {
-      throw UsageException(
-          'No option specified for the output directory.', usage);
-    }
+  Future<bool> _updateEnvFile() async {
+    var values = _parseEnvArgs();
+    // generatedFileCount++;
+    return EnvManager(outputDirectory).update(values);
+  }
 
-    if (argResults!.rest.length > 1) {
-      String message = 'Multiple output directories specified.';
-      for (final String arg in argResults!.rest) {
-        if (arg.startsWith('-')) {
-          message += '\nTry moving $arg to be immediately following $name';
-          break;
-        }
-      }
-      throw FormatException(message);
+  Map<String, String> _parseEnvArgs() {
+    if (argResults == null) throw NullThrownError();
+    Map<String, String> result = {};
+    if (argResults!.wasParsed('namespace')) {
+      result['NAMESPACE'] = argResults!['namespace'];
+    }
+    if (argResults!.wasParsed('root-domain')) {
+      result['ROOT_DOMAIN'] = _getRootDomain(argResults!['root-domain']);
+    }
+    if (argResults!.wasParsed('api-key')) {
+      result['API_KEY'] = argResults!['api-key'];
+    }
+    return result;
+  }
+
+  String _getRootDomain(String flag) {
+    switch (flag) {
+      case 've':
+        return 'vip.ve.atsign.zone';
+      case 'prod':
+      default:
+        return 'root.atsign.org';
     }
   }
 
-  Directory get projectDir {
-    if (argResults?.rest == null) {
-      throw UsageException(
-          'No option specified for the output directory.', usage);
+  // * dependencies for skeleton_app
+
+  Future<bool> _addDependencies() async {
+    if (argResults == null) throw NullThrownError();
+    final List<String> packages = [
+      'at_client_mobile',
+      'at_onboarding_flutter',
+      'at_app'
+    ];
+    final bool local = argResults!['local'] as bool;
+    List<Future> futures = packages.map((package) async {
+      return await pub.add(package, local: local, directory: outputDirectory);
+    }).toList();
+    if (argResults!['pub']) {
+      await pub.get(directory: outputDirectory);
     }
-    return Directory(argResults!.rest.first);
+    return (await Future.wait(futures)).every((res) => res);
+  }
+
+  // * update the flutter android config
+
+  Future<bool> _androidConfig() async {
+    List<Future> futures = [
+      GradlePropertiesManager(outputDirectory).update(),
+      AppBuildGradleManager(outputDirectory).update()
+    ];
+    return (await Future.wait(futures)).every((res) => res);
   }
 }
